@@ -10,8 +10,6 @@ from threading import Lock
 
 from functools import partial
 
-from tqdm import tqdm
-
 from .atm_gate import ATMGate
 from .atm_simulator import ATMSimulator
 

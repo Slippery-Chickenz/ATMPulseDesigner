@@ -6,8 +6,8 @@ class ATMParamaterInput:
 
     def __init__(
         self, 
-        updatePulseFunc: Callable[[float, float, float, float, float, float, float], None],
-        savePulseFunc: Callable[[str], None]
+        updatePulseFunc: Callable[[float | None, float | None, float | None, float | None, float | None, float | None, float | None], None],
+        savePulseFunc: Callable[[str | None], None]
     ) -> None:
 
         # Update Function
@@ -76,7 +76,7 @@ class ATMParamaterInput:
 
             with ui.dialog() as dialog, ui.card():
                 ui.label('Save as...')
-                filename = ui.input('filename', value='file.txt')
+                filename = ui.input('filename', value='atm_pulse')
 
                 def save():
                     self.savePulseFunc(filename.value)

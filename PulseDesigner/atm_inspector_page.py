@@ -1,6 +1,8 @@
 from nicegui import ui
 import numpy as np
 
+import os
+
 from .qipATM import ATMGate
 
 from .atm_parameter_input import ATMParamaterInput
@@ -13,6 +15,10 @@ class ATMInspectorPage:
 
         # ATM Pulse currently inspected
         self.atmGate: ATMGate | None = None
+
+        # Percentage value for rise and fall gradients to put in the save data
+        self.percentRiseGradient: float | None = None
+        self.percentFallGradient: float | None = None
 
         # Paramater Input
         self.atmParameterInput: ATMParamaterInput = ATMParamaterInput(self.updatePulse, self.savePulse)
@@ -38,14 +44,27 @@ class ATMInspectorPage:
 
     def updatePulse(
         self,
-        pulseTime: float,
-        riseTime: float,
-        fallTime: float,
-        maxAmplitude: float,
-        maxFrequency: float,
-        riseGradient: float,
-        fallGradient: float
+        pulseTime: float | None,
+        riseTime: float | None,
+        fallTime: float | None,
+        maxAmplitude: float | None,
+        maxFrequency: float | None,
+        riseGradient: float | None,
+        fallGradient: float | None
     ) -> None:
+
+        if (pulseTime is None or
+            riseTime is None or
+            fallTime is None or
+            maxAmplitude is None or
+            maxFrequency is None or
+            riseGradient is None or
+            fallGradient is None):
+            print("Tried to update pulse missing a parameter")
+            return;
+
+        self.percentFallGradient = fallGradient
+        self.percentRiseGradient = riseGradient
         
         # Convert rise and fall gradient to absolute instead of relative values
         riseGradient = maxAmplitude * riseGradient / riseTime
@@ -56,12 +75,12 @@ class ATMInspectorPage:
 
         try:
             self.atmGate = ATMGate(pulseTime,
-                                        riseTime,
-                                        fallTime,
-                                        maxAmplitude,
-                                        maxFrequency,
-                                        riseGradient,
-                                        fallGradient)
+                                   riseTime,
+                                   fallTime,
+                                   maxAmplitude,
+                                   maxFrequency,
+                                   riseGradient,
+                                   fallGradient)
         except:
             print("Cannot calculate ATM Pulse with these values")
             ui.notify("Cannot calculate ATM Pulse with these values")
@@ -79,26 +98,42 @@ class ATMInspectorPage:
 
     def savePulse(
         self,
-        fileName: str,
+        fileName: str | None,
     ) -> None:
+
+        self.atmParameterInput.collectAndUpdate()
 
         if self.atmGate is None:
             print("No Valid ATM Pulse currently made")
             return
 
+        if fileName is None:
+            print("No given file name")
+            return
+
+        # If a file extension was given then remove it and save it
+        name, extension = os.path.splitext(fileName)
+        if extension == "":
+            extension = ".txt"
+
         pulseData = self.atmGate.getPulseData()
 
-        print(fileName)
-        with open(fileName, "w") as f:
-            f.write("Rabi={}\n".format(self.atmGate.getMaxAmplitude()))
-            f.write("leftI,leftQ,rightI,rightQ\n")
-            for k in range(len(pulseData[0][0])):
-                dataString = ""
-                for i in range(2):
-                    for j in range(2):
-                        dataString += "{:f},".format(float(np.float16(pulseData[i][j][k])))
-                dataString = dataString[:-1]
-                dataString += "\n"
-                f.write(dataString)
-
+        for i, side in enumerate(["_left_", "_right_"]):
+            for j, iq, in enumerate(["I", "Q"]):
+                with open(name + 
+                          side + 
+                          iq + extension, "w") as f:
+                    for pulseValue in pulseData[i][j]:
+                        f.write("{:f}".format(float(np.float16(pulseValue))) + "\n")
+        
+        with open(name + "_params.txt", "w") as f:
+            f.write("Pulse Time: {}\n".format(self.atmGate.getTime()))
+            f.write("Rise Time: {}\n".format(self.atmGate.riseTime))
+            f.write("Fall Time: {}\n".format(self.atmGate.fallTime))
+            f.write("Max Amplitude: {}\n".format(self.atmGate.getMaxAmplitude() / 2))
+            f.write("Max Frequency: {}\n".format(self.atmGate.getMaxFrequency()))
+            f.write("Percent Rise Gradient: {}\n".format(self.percentRiseGradient))
+            f.write("Percent Gradient: {}\n".format(self.percentFallGradient))
+            f.write("Rise Gradient: {}\n".format(self.atmGate.riseGradient))
+            f.write("Fall Gradient: {}".format(self.atmGate.fallGradient))
         return
