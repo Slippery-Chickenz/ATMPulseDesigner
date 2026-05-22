@@ -107,9 +107,10 @@ class ATMGate:
         for t in pulseTimes:
             integratedFrequency.append(integratedFrequency[-1] + self.getFrequency(float(t)) * pulseTimes[1])
         integratedFrequency.pop()
+        integratedFrequency = [i - integratedFrequency[-1] for i in integratedFrequency]
         pulseValues = [self.getAmplitude(t) * 
                         np.exp((2 * np.pi * integratedFrequency[i]
-                        + self.getPhase(t)) * 1j)
+                        + self.getPhase(t)) * -1j)
                         for i, t in enumerate(saveTimes)]
         pulseValuesI = [val.real for val in pulseValues]
         pulseValuesQ = [val.imag for val in pulseValues]
@@ -191,6 +192,7 @@ class ATMGate:
         for t in plotTimes:
             integratedFrequency.append(integratedFrequency[-1] + self.getFrequency(t) * plotTimes[1])
         integratedFrequency.pop()
+        integratedFrequency = [i - integratedFrequency[-1] for i in integratedFrequency]
         frequencies = [self.getFrequency(t) for t in plotTimes]
         pulseValues = [self.getAmplitude(t) * np.cos(2 * np.pi * integratedFrequency[i] + self.getPhase((t))) for i, t in enumerate(plotTimes)]
 
