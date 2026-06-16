@@ -75,14 +75,14 @@ class ATMGate:
                           self.riseTime,
                           self.fallTime,
                           self.maxAmplitude,
-                          self.maxFrequency,
+                          -self.maxFrequency,
                           self.riseGradient,
                           self.fallGradient).getGateWaveform()
         rightIQ = ATMGate(self.getTime(), 
                           self.riseTime,
                           self.fallTime,
                           self.maxAmplitude,
-                          -self.maxFrequency,
+                          self.maxFrequency,
                           self.riseGradient,
                           self.fallGradient).getGateWaveform()
 
@@ -181,7 +181,7 @@ class ATMGate:
             t += pulse.getTime()
         return t
 
-    def plotPulses(self, axes: list[matplotlib.axes.Axes] | None = None, orientation: Literal["h", "v"] = "v") -> None:
+    def plotPulses(self, axes: list[matplotlib.axes.Axes] | None = None, orientation: Literal["h", "v"] = "v", bothFrequencies = False) -> None:
 
         # Time values to plot over
         plotTimes = np.linspace(0, self.getTime(), 500 * len(self.pulses))
@@ -194,6 +194,7 @@ class ATMGate:
         integratedFrequency.pop()
         integratedFrequency = [i - integratedFrequency[-1] for i in integratedFrequency]
         frequencies = [self.getFrequency(t) for t in plotTimes]
+        left_frequencies = [-self.getFrequency(t) for t in plotTimes]
         pulseValues = [self.getAmplitude(t) * np.cos(2 * np.pi * integratedFrequency[i] + self.getPhase((t))) for i, t in enumerate(plotTimes)]
 
         showPlot = False
@@ -220,8 +221,11 @@ class ATMGate:
         axes[0].plot(plotTimes, amplitudes)
         axes[0].set_ylabel("Amplitude")
 
-        axes[1].plot(plotTimes, frequencies)
+        axes[1].plot(plotTimes, frequencies, label = "Right")
+        if bothFrequencies:
+            axes[1].plot(plotTimes, left_frequencies, label = "Left")
         axes[1].set_ylabel("Frequency")
+        axes[1].legend()
 
         axes[2].plot(plotTimes, pulseValues)
         axes[2].set_ylabel("Pulse")
